@@ -277,12 +277,61 @@ function safeFileName(name){
  return name.replace(/[^a-zA-Z0-9._-]/g,"_");
 }
 
+let editingReleaseId = null;
+
+async function editRelease(id){
+ const {data:r,error}=await db.from("releases")
+  .select("*")
+  .eq("id",id)
+  .eq("user_id",currentUser.id)
+  .eq("status","revision_requested")
+  .single();
+
+ if(error || !r){
+  alert("Data revisi tidak ditemukan.");
+  return;
+ }
+
+ editingReleaseId=id;
+
+ $("songTitle").value=r.song_title||"";
+ $("releaseArtist").value=r.artist_name||"";
+ $("featuring").value=r.featuring||"";
+ $("genre").value=r.genre||"";
+ $("language").value=r.language||"";
+ $("songwriter").value=r.songwriter||"";
+ $("producer").value=r.producer||"";
+ $("copyrightOwner").value=r.copyright_owner||"";
+ $("releaseDate").value=r.release_date||"";
+ $("notes").value=r.notes||"";
+
+ document.querySelectorAll('input[name="platform"]').forEach(x=>{
+  x.checked=(r.platforms||[]).includes(x.value);
+ });
+
+ $("audioFile").required=false;
+ $("artworkFile").required=false;
+
+ $("submitBtn").textContent="KIRIM ULANG REVISI";
+
+ showTab("submitView",document.querySelector("#artistTabs button"));
+
+ alert("Form revisi siap. File audio dan artwork lama tetap digunakan jika tidak diganti.");
+   }
+ 
 async function submitRelease(event){
  event.preventDefault();
  if(!currentUser){alert("Silakan login kembali.");return}
 
- const audio=$("audioFile").files[0];
- const artwork=$("artworkFile").files[0];
+ 
+const audio=$("audioFile").files[0];
+const artwork=$("artworkFile").files[0];
+
+if(!editingReleaseId && (!audio || !artwork)){
+ alert("Pilih audio dan artwork.");
+ return;
+}
+ 
  const platforms=[...document.querySelectorAll('input[name="platform"]:checked')].map(x=>x.value);
 
  if(!audio||!artwork){alert("Pilih file audio dan artwork.");return}
@@ -349,12 +398,194 @@ async function submitRelease(event){
 }
 
 const statusLabels={
- pending_review:"Menunggu pemeriksaan",
- revision_requested:"Perlu revisi",
- approved:"Disetujui",
- sent_to_distributor:"Dikirim ke distributor",
- live:"Sudah tayang",
- rejected:"Ditolak"
+ 
+async function submitRelease(event){
+ event.preventDefault();
+
+ if(!currentUser){
+  alert("Silakan login kembali.");
+  return;
+ }
+
+ const audio=$("audioFile").files[0];
+ const artwork=$("artworkFile").files[0];
+ const isRevision=!!editingReleaseId;
+
+ const platforms=[
+  ...document.querySelectorAll('input[name="platform"]:checked')
+ ].map(x=>x.value);
+
+ if(!platforms.length){
+  alert("Pilih minimal satu platform.");
+  return;
+ }
+
+ if(!isRevision && (!audio || !artwork)){
+  alert("Pilih audio dan artwork.");
+  return;
+ }
+
+ if(audio){
+  const ext=audio.name.split(".").pop().toLowerCase();
+  if(!["wav","mp3"].includes(ext)){
+   alert("Audio harus WAV atau MP3.");
+   return;
+  }
+  if(audio.size>50*1024*1024){
+   alert("Audio maksimal 50 MB.");
+   return;
+  }
+ }
+
+ if(artwork){
+  const ext=artwork.name.split(".").pop().toLowerCase();
+  if(!["jpg","jpeg","png"].includes(ext)){
+   alert("Artwork harus JPG atau PNG.");
+   return;
+  }
+  if(artwork.size>10*1024*1024){
+   alert("Artwork maksimal 10 MB.");
+   return;
+  }
+ }
+
+ const btn=$("submitBtn");
+ btn.disabled=true;
+ btn.textContent="MEMPROSES...";
+
+ let uploadedAudio=null;
+ let uploadedArtwork=null;
+
+ try{
+  let oldRelease=null;
+
+  if(isRevision){
+   const {data,error}=await db.from("releases")
+    .select("*")
+    .eq("id",editingReleaseId)
+    .eq("user_id",currentUser.id)
+    .eq("status","revision_requested")
+    .single();
+
+   if(error)throw error;
+   oldRelease=data;
+  }
+
+  let audioPath=oldRelease?.audio_path||null;
+  let artworkPath=oldRelease?.artwork_path||null;
+
+  const folder=currentUser.id+"/"+Date.now()+"_"+Math.random().toString(36).slice(2);
+
+  if(audio){
+   audioPath=folder+"/"+audio.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+
+   const result=await db.storage.from("release-audio")
+    .upload(audioPath,audio);
+
+   if(result.error)throw result.error;
+   uploadedAudio=audioPath;
+  }
+
+  if(artwork){
+   artworkPath=folder+"/"+artwork.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+
+   const result=await db.storage.from("release-artwork")
+    .upload(artworkPath,artwork);
+
+   if(result.error)throw result.error;
+   uploadedArtwork=artworkPath;
+  }
+
+  const record={
+   song_title:$("songTitle").value.trim(),
+   artist_name:$("releaseArtist").value.trim(),
+   featuring:$("featuring").value.trim(),
+   genre:$("genre").value.trim(),
+   language:$("language").value.trim(),
+   songwriter:$("songwriter").value.trim(),
+   producer:$("producer").value.trim(),
+   copyright_owner:$("copyrightOwner").value.trim(),
+   release_date:$("releaseDate").value||null,
+   platforms,
+   audio_path:audioPath,
+   artwork_path:artworkPath,
+   notes:$("notes").value.trim(),
+   status:"pending_review"
+  };
+
+  btn.textContent="MENYIMPAN DATA...";
+
+  let result;
+
+  if(isRevision){
+   result=await db.from("releases")
+    .update(record)
+    .eq("id",editingReleaseId)
+    .eq("user_id",currentUser.id)
+    .eq("status","revision_requested");
+  }else{
+   result=await db.from("releases").insert({
+    ...record,
+    user_id:currentUser.id
+   });
+  }
+
+  if(result.error)throw result.error;
+
+  // Hapus file lama setelah perubahan database berhasil.
+  if(oldRelease){
+   if(audio && oldRelease.audio_path){
+    await db.storage.from("release-audio")
+     .remove([oldRelease.audio_path]);
+   }
+
+   if(artwork && oldRelease.artwork_path){
+    await db.storage.from("release-artwork")
+     .remove([oldRelease.artwork_path]);
+   }
+  }
+
+  editingReleaseId=null;
+
+  $("releaseForm").reset();
+  $("releaseArtist").value=currentProfile.artist_name||"";
+  $("audioFile").required=true;
+  $("artworkFile").required=true;
+
+  alert(isRevision
+   ?"Revisi berhasil dikirim ulang kepada admin."
+   :"Pengajuan berhasil dikirim kepada admin.");
+
+  btn.textContent="KIRIM PENGAJUAN";
+
+  showTab(
+   "historyView",
+   document.querySelectorAll("#artistTabs button")[1]
+  );
+
+  await loadReleases();
+
+ }catch(error){
+
+  // Membersihkan file baru jika proses penyimpanan gagal.
+  if(uploadedAudio){
+   await db.storage.from("release-audio").remove([uploadedAudio]);
+  }
+
+  if(uploadedArtwork){
+   await db.storage.from("release-artwork").remove([uploadedArtwork]);
+  }
+
+  alert("Proses gagal: "+error.message);
+
+ }finally{
+  btn.disabled=false;
+  btn.textContent=editingReleaseId
+   ?"KIRIM ULANG REVISI"
+   :"KIRIM PENGAJUAN";
+ }
+ }
+ 
 };
 
 async function loadReleases(){
@@ -372,7 +603,8 @@ async function loadReleases(){
    <div class="muted">${escapeHTML(r.artist_name||"")} · ${new Date(r.created_at).toLocaleDateString("id-ID")}</div>
    <span class="status">${statusLabels[r.status]||r.status}</span>
    <p>Platform: ${escapeHTML((r.platforms||[]).join(", "))}</p>
-   ${r.admin_notes?`<p>Catatan admin: ${escapeHTML(r.admin_notes)}</p>`:""}
+   ${r.admin_notes?`<p>Catatan admin: ${r.status==="revision_requested"?
+`<button onclick="editRelease('${r.id}')">PERBAIKI & KIRIM ULANG</button>`:""} ${escapeHTML(r.admin_notes)}</p>`:""}
   </div>
  `).join("");
 }
