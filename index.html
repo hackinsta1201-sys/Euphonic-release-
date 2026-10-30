@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EUPHONIC RELEASE</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#090a0d;color:white;
+ font-family:Arial,sans-serif;
+ min-height:100vh;display:flex;
+ justify-content:center;align-items:center;
+ padding:20px;
+}
+.container{width:100%;max-width:410px}
+.logo{text-align:center;margin-bottom:35px}
+.logo h1{font-size:30px;letter-spacing:5px;margin:0}
+.logo p{font-size:10px;letter-spacing:4px;color:#999}
+.panel{
+ background:#14161b;border:1px solid #292c33;
+ border-radius:15px;padding:25px;
+}
+h2{font-size:24px;margin-top:0}
+p{color:#999;font-size:13px;line-height:1.6}
+label{display:block;font-size:12px;margin:18px 0 8px}
+input{
+ width:100%;padding:14px;background:#090a0d;
+ border:1px solid #333741;border-radius:8px;
+ color:white;outline:none;
+}
+input:focus{border-color:#aaa}
+button{
+ width:100%;padding:14px;border:0;
+ border-radius:8px;background:white;
+ color:black;font-weight:bold;margin-top:20px;
+}
+.switch{text-align:center;margin-top:20px;font-size:13px}
+.switch span{color:white;text-decoration:underline;cursor:pointer}
+#message{font-size:13px;margin-top:15px;overflow-wrap:anywhere}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="container">
+ <div class="logo">
+  <h1>EUPHONIC</h1>
+  <p>RELEASE PORTAL</p>
+ </div>
+
+ <div class="panel" id="authPanel">
+  <div id="loginForm">
+   <h2>Welcome Back</h2>
+   <p>Masuk ke akun artis EUPHONIC Anda.</p>
+   <label>Email Address</label>
+   <input id="loginEmail" type="email" placeholder="Email Anda">
+   <label>Password</label>
+   <input id="loginPassword" type="password" placeholder="Password">
+   <button onclick="login()">SIGN IN</button>
+   <div class="switch">Belum punya akun?
+    <span onclick="showRegister()">Daftar sekarang</span>
+   </div>
+  </div>
+
+  <div id="registerForm" class="hidden">
+   <h2>Create Account</h2>
+   <p>Buat akun artis EUPHONIC RELEASE.</p>
+   <label>Nama Lengkap</label>
+   <input id="fullName" placeholder="Nama lengkap">
+   <label>Nama Artis</label>
+   <input id="artistName" placeholder="Nama panggung">
+   <label>Email</label>
+   <input id="regEmail" type="email" placeholder="Email aktif">
+   <label>Password</label>
+   <input id="regPassword" type="password" placeholder="Minimal 8 karakter">
+   <button onclick="register()">CREATE ACCOUNT</button>
+   <div class="switch">Sudah punya akun?
+    <span onclick="showLogin()">Login</span>
+   </div>
+  </div>
+
+  <div id="dashboard" class="hidden">
+   <h2>Dashboard Artis</h2>
+   <p id="welcome"></p>
+   <p>Akun EUPHONIC RELEASE berhasil terhubung.</p>
+   <button onclick="logout()">LOG OUT</button>
+  </div>
+
+  <div id="message"></div>
+ </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://twkifnfzytjswwhelmqc.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_oQSKPmO3r_VQBZ5tgdl5AQ_T1SshEHb";
+
+const db = window.supabase.createClient(
+ SUPABASE_URL, SUPABASE_KEY
+);
+
+function msg(text){
+ document.getElementById("message").textContent=text;
+}
+function showRegister(){
+ loginForm.classList.add("hidden");
+ registerForm.classList.remove("hidden");
+ msg("");
+}
+function showLogin(){
+ registerForm.classList.add("hidden");
+ loginForm.classList.remove("hidden");
+ msg("");
+}
+async function register(){
+ const name=fullName.value.trim();
+ const artist=artistName.value.trim();
+ const email=regEmail.value.trim();
+ const password=regPassword.value;
+
+ if(!name||!artist||!email||password.length<8){
+  msg("Lengkapi semua data. Password minimal 8 karakter.");
+  return;
+ }
+ msg("Sedang mendaftarkan akun...");
+ const {data,error}=await db.auth.signUp({
+  email,password,
+  options:{
+   data:{
+    full_name:name,
+    artist_name:artist
+   }
+  }
+ });
+ if(error){msg(error.message);return}
+ msg("Pendaftaran berhasil. Periksa email untuk verifikasi jika diminta.");
+}
+async function login(){
+ const email=loginEmail.value.trim();
+ const password=loginPassword.value;
+ if(!email||!password){msg("Masukkan email dan password.");return}
+ msg("Sedang masuk...");
+ const {data,error}=await db.auth.signInWithPassword({
+  email,password
+ });
+ if(error){msg(error.message);return}
+ await checkUser();
+}
+async function checkUser(){
+ const {data}=await db.auth.getUser();
+ if(!data.user)return;
+ loginForm.classList.add("hidden");
+ registerForm.classList.add("hidden");
+ dashboard.classList.remove("hidden");
+ welcome.textContent="Selamat datang, "+(
+  data.user.user_metadata.artist_name ||
+  data.user.user_metadata.full_name ||
+  data.user.email
+ );
+ msg("");
+}
+async function logout(){
+ await db.auth.signOut();
+ dashboard.classList.add("hidden");
+ loginForm.classList.remove("hidden");
+ msg("Anda telah keluar.");
+}
+db.auth.onAuthStateChange((event,session)=>{
+ if(session){
+  checkUser();
+ }else{
+  dashboard.classList.add("hidden");
+  loginForm.classList.remove("hidden");
+ }
+});
+</script>
+</body>
+  </html>
+  
