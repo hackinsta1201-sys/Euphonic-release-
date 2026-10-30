@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -8,173 +7,453 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
-body{
- margin:0;background:#090a0d;color:white;
- font-family:Arial,sans-serif;
- min-height:100vh;display:flex;
- justify-content:center;align-items:center;
- padding:20px;
-}
-.container{width:100%;max-width:410px}
-.logo{text-align:center;margin-bottom:35px}
-.logo h1{font-size:30px;letter-spacing:5px;margin:0}
-.logo p{font-size:10px;letter-spacing:4px;color:#999}
-.panel{
- background:#14161b;border:1px solid #292c33;
- border-radius:15px;padding:25px;
-}
-h2{font-size:24px;margin-top:0}
-p{color:#999;font-size:13px;line-height:1.6}
-label{display:block;font-size:12px;margin:18px 0 8px}
-input{
- width:100%;padding:14px;background:#090a0d;
- border:1px solid #333741;border-radius:8px;
- color:white;outline:none;
-}
-input:focus{border-color:#aaa}
-button{
- width:100%;padding:14px;border:0;
- border-radius:8px;background:white;
- color:black;font-weight:bold;margin-top:20px;
-}
-.switch{text-align:center;margin-top:20px;font-size:13px}
-.switch span{color:white;text-decoration:underline;cursor:pointer}
-#message{font-size:13px;margin-top:15px;overflow-wrap:anywhere}
-.hidden{display:none}
+body{margin:0;background:#090a0d;color:#fff;font-family:Arial,sans-serif}
+header{padding:20px;border-bottom:1px solid #292c33;display:flex;justify-content:space-between;align-items:center}
+.brand{font-size:20px;font-weight:bold;letter-spacing:3px}
+.brand small{display:block;font-size:9px;color:#999;letter-spacing:4px;margin-top:5px}
+button{border:0;border-radius:7px;padding:12px 16px;font-weight:bold;cursor:pointer;background:#fff;color:#000}
+button.secondary{background:#292c33;color:#fff}
+button.danger{background:#6b2525;color:#fff}
+button:disabled{opacity:.5}
+.container{width:100%;max-width:900px;margin:25px auto;padding:0 16px}
+.panel{background:#14161b;border:1px solid #292c33;border-radius:12px;padding:20px;margin-bottom:18px}
+h2{font-size:22px;margin:0 0 10px}
+h3{font-size:16px;margin:0 0 14px}
+p,.muted{color:#999;font-size:13px;line-height:1.6}
+label{display:block;font-size:12px;margin:15px 0 7px;color:#ccc}
+input,select,textarea{width:100%;padding:13px;background:#090a0d;border:1px solid #333741;border-radius:7px;color:white;outline:none}
+textarea{min-height:85px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:#aaa}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.actions button{width:auto;margin:0}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.tabs button{background:#292c33;color:#fff}
+.tabs button.active{background:#fff;color:#000}
+.hidden{display:none!important}
+.status{display:inline-block;padding:6px 9px;border-radius:5px;background:#292c33;font-size:11px;margin-top:8px}
+.release{border-top:1px solid #292c33;padding:15px 0}
+.release:first-child{border-top:0}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.checks label{margin:5px 0;display:flex;gap:8px;align-items:center}
+.checks input{width:auto}
+#message{font-size:13px;color:#ddd;margin-top:12px;overflow-wrap:anywhere}
+.small{font-size:11px;color:#888}
+@media(max-width:550px){.grid{grid-template-columns:1fr}.container{margin:16px auto}.panel{padding:16px}}
 </style>
 </head>
 <body>
+
+<header>
+ <div class="brand">EUPHONIC<small>RELEASE PORTAL</small></div>
+ <button class="secondary hidden" id="logoutBtn" onclick="logout()">LOG OUT</button>
+</header>
+
 <div class="container">
- <div class="logo">
-  <h1>EUPHONIC</h1>
-  <p>RELEASE PORTAL</p>
+
+<!-- LOGIN DAN REGISTRASI -->
+<section id="authPanel" class="panel">
+ <div id="loginForm">
+  <h2>Welcome Back</h2>
+  <p>Masuk ke akun artis EUPHONIC RELEASE.</p>
+  <label>Email</label>
+  <input id="loginEmail" type="email" placeholder="Email Anda">
+  <label>Password</label>
+  <input id="loginPassword" type="password" placeholder="Password">
+  <button style="width:100%;margin-top:18px" onclick="login()">SIGN IN</button>
+  <p>Belum punya akun? <a href="#" onclick="showRegister();return false" style="color:white">Daftar sekarang</a></p>
  </div>
 
- <div class="panel" id="authPanel">
-  <div id="loginForm">
-   <h2>Welcome Back</h2>
-   <p>Masuk ke akun artis EUPHONIC Anda.</p>
-   <label>Email Address</label>
-   <input id="loginEmail" type="email" placeholder="Email Anda">
-   <label>Password</label>
-   <input id="loginPassword" type="password" placeholder="Password">
-   <button onclick="login()">SIGN IN</button>
-   <div class="switch">Belum punya akun?
-    <span onclick="showRegister()">Daftar sekarang</span>
-   </div>
-  </div>
-
-  <div id="registerForm" class="hidden">
-   <h2>Create Account</h2>
-   <p>Buat akun artis EUPHONIC RELEASE.</p>
-   <label>Nama Lengkap</label>
-   <input id="fullName" placeholder="Nama lengkap">
-   <label>Nama Artis</label>
-   <input id="artistName" placeholder="Nama panggung">
-   <label>Email</label>
-   <input id="regEmail" type="email" placeholder="Email aktif">
-   <label>Password</label>
-   <input id="regPassword" type="password" placeholder="Minimal 8 karakter">
-   <button onclick="register()">CREATE ACCOUNT</button>
-   <div class="switch">Sudah punya akun?
-    <span onclick="showLogin()">Login</span>
-   </div>
-  </div>
-
-  <div id="dashboard" class="hidden">
-   <h2>Dashboard Artis</h2>
-   <p id="welcome"></p>
-   <p>Akun EUPHONIC RELEASE berhasil terhubung.</p>
-   <button onclick="logout()">LOG OUT</button>
-  </div>
-
-  <div id="message"></div>
+ <div id="registerForm" class="hidden">
+  <h2>Create Account</h2>
+  <p>Daftar sebagai artis EUPHONIC RELEASE.</p>
+  <label>Nama lengkap</label>
+  <input id="fullName" placeholder="Nama lengkap">
+  <label>Nama artis</label>
+  <input id="artistName" placeholder="Nama panggung">
+  <label>Email</label>
+  <input id="regEmail" type="email" placeholder="Email aktif">
+  <label>Password</label>
+  <input id="regPassword" type="password" placeholder="Minimal 8 karakter">
+  <button style="width:100%;margin-top:18px" onclick="register()">CREATE ACCOUNT</button>
+  <p>Sudah punya akun? <a href="#" onclick="showLogin();return false" style="color:white">Login</a></p>
  </div>
+ <div id="message"></div>
+</section>
+
+<!-- AREA DASHBOARD -->
+<section id="appPanel" class="hidden">
+ <div class="panel">
+  <h2 id="welcome">Dashboard</h2>
+  <p id="accountInfo">EUPHONIC RELEASE PORTAL</p>
+ </div>
+
+ <div class="tabs" id="artistTabs">
+  <button class="active" onclick="showTab('submitView',this)">Ajukan Rilisan</button>
+  <button onclick="showTab('historyView',this);loadReleases()">Riwayat Rilisan</button>
+  <button onclick="showTab('profileView',this)">Profil</button>
+ </div>
+
+ <!-- FORM PENGAJUAN -->
+ <div id="submitView" class="panel">
+  <h2>Pengajuan Rilisan Baru</h2>
+  <p>Isi informasi lagu dan unggah file master serta artwork.</p>
+
+  <form id="releaseForm" onsubmit="submitRelease(event)">
+   <label>Judul lagu *</label>
+   <input id="songTitle" required>
+
+   <div class="grid">
+    <div><label>Nama artis *</label><input id="releaseArtist" required></div>
+    <div><label>Featuring</label><input id="featuring"></div>
+   </div>
+
+   <div class="grid">
+    <div><label>Genre *</label><input id="genre" required placeholder="Contoh: Pop, DJ Remix"></div>
+    <div><label>Bahasa lagu *</label><input id="language" required placeholder="Indonesia"></div>
+   </div>
+
+   <div class="grid">
+    <div><label>Pencipta lagu *</label><input id="songwriter" required></div>
+    <div><label>Produser</label><input id="producer"></div>
+   </div>
+
+   <label>Pemilik hak cipta *</label>
+   <input id="copyrightOwner" required>
+
+   <label>Target tanggal rilis</label>
+   <input id="releaseDate" type="date">
+
+   <label>Platform tujuan *</label>
+   <div class="checks">
+    <label><input type="checkbox" name="platform" value="Spotify"> Spotify</label>
+    <label><input type="checkbox" name="platform" value="Apple Music"> Apple Music</label>
+    <label><input type="checkbox" name="platform" value="YouTube Music"> YouTube Music</label>
+    <label><input type="checkbox" name="platform" value="Deezer"> Deezer</label>
+    <label><input type="checkbox" name="platform" value="Amazon Music"> Amazon Music</label>
+    <label><input type="checkbox" name="platform" value="TikTok Music"> TikTok Music</label>
+    <label><input type="checkbox" name="platform" value="SoundCloud"> SoundCloud</label>
+   </div>
+
+   <label>File audio master (WAV/MP3) *</label>
+   <input id="audioFile" type="file" accept=".wav,.mp3,audio/wav,audio/mpeg" required>
+   <p class="small">Maksimal 50 MB. Pastikan file merupakan master final.</p>
+
+   <label>Artwork lagu (JPG/PNG) *</label>
+   <input id="artworkFile" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required>
+   <p class="small">Maksimal 10 MB. Gunakan artwork persegi.</p>
+
+   <label>Catatan / keterangan izin hak cipta</label>
+   <textarea id="notes" placeholder="Tuliskan keterangan izin, pemegang hak, atau informasi tambahan."></textarea>
+
+   <p class="small">Dengan mengirimkan pengajuan, Anda menyatakan memiliki atau telah memperoleh izin yang diperlukan untuk mendistribusikan materi ini.</p>
+
+   <button id="submitBtn" type="submit" style="width:100%;margin-top:18px">KIRIM PENGAJUAN</button>
+  </form>
+ </div>
+
+ <!-- RIWAYAT -->
+ <div id="historyView" class="panel hidden">
+  <h2>Riwayat Rilisan</h2>
+  <p>Periksa perkembangan pengajuan lagu Anda.</p>
+  <div id="releaseList">Memuat data...</div>
+ </div>
+
+ <!-- PROFIL -->
+ <div id="profileView" class="panel hidden">
+  <h2>Profil Artis</h2>
+  <label>Nama lengkap</label><input id="profileName" disabled>
+  <label>Nama artis</label><input id="profileArtist" disabled>
+  <label>Email akun</label><input id="profileEmail" disabled>
+  <p class="small">Untuk perubahan data profil, hubungi administrator EUPHONIC.</p>
+ </div>
+
+ <!-- ADMIN -->
+ <div id="adminView" class="panel hidden">
+  <h2>Admin Dashboard</h2>
+  <p>Daftar seluruh pengajuan rilisan artis.</p>
+  <button class="secondary" onclick="loadAdminReleases()">REFRESH DATA</button>
+  <div id="adminList" style="margin-top:15px">Memuat data...</div>
+ </div>
+</section>
+
 </div>
 
 <script>
 const SUPABASE_URL = "https://twkifnfzytjswwhelmqc.supabase.co";
 const SUPABASE_KEY = "sb_publishable_oQSKPmO3r_VQBZ5tgdl5AQ_T1SshEHb";
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-const db = window.supabase.createClient(
- SUPABASE_URL, SUPABASE_KEY
-);
+let currentUser = null;
+let currentProfile = null;
 
-function msg(text){
- document.getElementById("message").textContent=text;
-}
+const $ = id => document.getElementById(id);
+
+function msg(t){$("message").textContent=t}
 function showRegister(){
- loginForm.classList.add("hidden");
- registerForm.classList.remove("hidden");
+ $("loginForm").classList.add("hidden");
+ $("registerForm").classList.remove("hidden");
  msg("");
 }
 function showLogin(){
- registerForm.classList.add("hidden");
- loginForm.classList.remove("hidden");
+ $("registerForm").classList.add("hidden");
+ $("loginForm").classList.remove("hidden");
  msg("");
 }
-async function register(){
- const name=fullName.value.trim();
- const artist=artistName.value.trim();
- const email=regEmail.value.trim();
- const password=regPassword.value;
+function showTab(id,btn){
+ ["submitView","historyView","profileView"].forEach(x=>$(x).classList.add("hidden"));
+ $(id).classList.remove("hidden");
+ document.querySelectorAll("#artistTabs button").forEach(x=>x.classList.remove("active"));
+ if(btn)btn.classList.add("active");
+}
 
+async function register(){
+ const name=$("fullName").value.trim();
+ const artist=$("artistName").value.trim();
+ const email=$("regEmail").value.trim();
+ const password=$("regPassword").value;
  if(!name||!artist||!email||password.length<8){
-  msg("Lengkapi semua data. Password minimal 8 karakter.");
-  return;
+  msg("Lengkapi data. Password minimal 8 karakter.");return;
  }
- msg("Sedang mendaftarkan akun...");
- const {data,error}=await db.auth.signUp({
+ msg("Mendaftarkan akun...");
+ const {error}=await db.auth.signUp({
   email,password,
-  options:{
-   data:{
-    full_name:name,
-    artist_name:artist
-   }
-  }
+  options:{data:{full_name:name,artist_name:artist}}
  });
  if(error){msg(error.message);return}
  msg("Pendaftaran berhasil. Periksa email untuk verifikasi jika diminta.");
 }
+
 async function login(){
- const email=loginEmail.value.trim();
- const password=loginPassword.value;
+ const email=$("loginEmail").value.trim();
+ const password=$("loginPassword").value;
  if(!email||!password){msg("Masukkan email dan password.");return}
  msg("Sedang masuk...");
- const {data,error}=await db.auth.signInWithPassword({
-  email,password
- });
+ const {data,error}=await db.auth.signInWithPassword({email,password});
  if(error){msg(error.message);return}
- await checkUser();
+ await loadDashboard(data.user);
 }
-async function checkUser(){
- const {data}=await db.auth.getUser();
- if(!data.user)return;
- loginForm.classList.add("hidden");
- registerForm.classList.add("hidden");
- dashboard.classList.remove("hidden");
- welcome.textContent="Selamat datang, "+(
-  data.user.user_metadata.artist_name ||
-  data.user.user_metadata.full_name ||
-  data.user.email
- );
- msg("");
+
+async function loadDashboard(user){
+ currentUser=user;
+ const {data:profile,error}=await db.from("profiles")
+  .select("*").eq("id",user.id).single();
+
+ if(error){
+  $("authPanel").classList.remove("hidden");
+  $("appPanel").classList.add("hidden");
+  msg("Profil belum ditemukan: "+error.message);
+  return;
+ }
+
+ currentProfile=profile;
+ $("authPanel").classList.add("hidden");
+ $("appPanel").classList.remove("hidden");
+ $("logoutBtn").classList.remove("hidden");
+
+ $("welcome").textContent="Selamat datang, "+(profile.artist_name||profile.full_name||"Artis");
+ $("accountInfo").textContent=profile.role==="admin"?"Administrator EUPHONIC":"Artist Account";
+
+ $("releaseArtist").value=profile.artist_name||"";
+ $("profileName").value=profile.full_name||"";
+ $("profileArtist").value=profile.artist_name||"";
+ $("profileEmail").value=user.email||"";
+
+ if(profile.role==="admin"){
+  $("artistTabs").classList.add("hidden");
+  $("submitView").classList.add("hidden");
+  $("historyView").classList.add("hidden");
+  $("profileView").classList.add("hidden");
+  $("adminView").classList.remove("hidden");
+  await loadAdminReleases();
+ }else{
+  $("artistTabs").classList.remove("hidden");
+  $("adminView").classList.add("hidden");
+  showTab("submitView",document.querySelector("#artistTabs button"));
+ }
 }
+
+function safeFileName(name){
+ return name.replace(/[^a-zA-Z0-9._-]/g,"_");
+}
+
+async function submitRelease(event){
+ event.preventDefault();
+ if(!currentUser){alert("Silakan login kembali.");return}
+
+ const audio=$("audioFile").files[0];
+ const artwork=$("artworkFile").files[0];
+ const platforms=[...document.querySelectorAll('input[name="platform"]:checked')].map(x=>x.value);
+
+ if(!audio||!artwork){alert("Pilih file audio dan artwork.");return}
+ if(platforms.length===0){alert("Pilih minimal satu platform.");return}
+
+ const audioExt=audio.name.split(".").pop().toLowerCase();
+ const imageExt=artwork.name.split(".").pop().toLowerCase();
+ if(!["wav","mp3"].includes(audioExt)){alert("Audio harus WAV atau MP3.");return}
+ if(!["jpg","jpeg","png"].includes(imageExt)){alert("Artwork harus JPG atau PNG.");return}
+ if(audio.size>50*1024*1024){alert("Audio melebihi 50 MB.");return}
+ if(artwork.size>10*1024*1024){alert("Artwork melebihi 10 MB.");return}
+
+ const btn=$("submitBtn");
+ btn.disabled=true;btn.textContent="MENGUNGGAH...";
+ try{
+  const folder=currentUser.id+"/"+Date.now()+"_"+Math.random().toString(36).slice(2);
+  const audioPath=folder+"/"+safeFileName(audio.name);
+  const artworkPath=folder+"/"+safeFileName(artwork.name);
+
+  let result=await db.storage.from("release-audio").upload(audioPath,audio);
+  if(result.error)throw result.error;
+
+  result=await db.storage.from("release-artwork").upload(artworkPath,artwork);
+  if(result.error){
+   await db.storage.from("release-audio").remove([audioPath]);
+   throw result.error;
+  }
+
+  btn.textContent="MENYIMPAN PENGAJUAN...";
+  const record={
+   user_id:currentUser.id,
+   song_title:$("songTitle").value.trim(),
+   artist_name:$("releaseArtist").value.trim(),
+   featuring:$("featuring").value.trim(),
+   genre:$("genre").value.trim(),
+   language:$("language").value.trim(),
+   songwriter:$("songwriter").value.trim(),
+   producer:$("producer").value.trim(),
+   copyright_owner:$("copyrightOwner").value.trim(),
+   release_date:$("releaseDate").value||null,
+   platforms,
+   audio_path:audioPath,
+   artwork_path:artworkPath,
+   notes:$("notes").value.trim(),
+   status:"pending_review"
+  };
+
+  const {error}=await db.from("releases").insert(record);
+  if(error){
+   await db.storage.from("release-audio").remove([audioPath]);
+   await db.storage.from("release-artwork").remove([artworkPath]);
+   throw error;
+  }
+
+  alert("Pengajuan berhasil dikirim ke EUPHONIC untuk ditinjau.");
+  $("releaseForm").reset();
+  $("releaseArtist").value=currentProfile.artist_name||"";
+  showTab("historyView",document.querySelectorAll("#artistTabs button")[1]);
+  await loadReleases();
+ }catch(error){
+  alert("Pengajuan gagal: "+error.message);
+ }
+ btn.disabled=false;btn.textContent="KIRIM PENGAJUAN";
+}
+
+const statusLabels={
+ pending_review:"Menunggu pemeriksaan",
+ revision_requested:"Perlu revisi",
+ approved:"Disetujui",
+ sent_to_distributor:"Dikirim ke distributor",
+ live:"Sudah tayang",
+ rejected:"Ditolak"
+};
+
+async function loadReleases(){
+ $("releaseList").textContent="Memuat data...";
+ const {data,error}=await db.from("releases")
+  .select("*").eq("user_id",currentUser.id)
+  .order("created_at",{ascending:false});
+
+ if(error){$("releaseList").textContent=error.message;return}
+ if(!data.length){$("releaseList").textContent="Belum ada pengajuan rilisan.";return}
+
+ $("releaseList").innerHTML=data.map(r=>`
+  <div class="release">
+   <h3>${escapeHTML(r.song_title)}</h3>
+   <div class="muted">${escapeHTML(r.artist_name||"")} · ${new Date(r.created_at).toLocaleDateString("id-ID")}</div>
+   <span class="status">${statusLabels[r.status]||r.status}</span>
+   <p>Platform: ${escapeHTML((r.platforms||[]).join(", "))}</p>
+   ${r.admin_notes?`<p>Catatan admin: ${escapeHTML(r.admin_notes)}</p>`:""}
+  </div>
+ `).join("");
+}
+
+async function loadAdminReleases(){
+ $("adminList").textContent="Memuat data...";
+ const {data,error}=await db.from("releases")
+  .select("*").order("created_at",{ascending:false});
+
+ if(error){$("adminList").textContent=error.message;return}
+ if(!data.length){$("adminList").textContent="Belum ada pengajuan.";return}
+
+ $("adminList").innerHTML=data.map(r=>`
+  <div class="release">
+   <h3>${escapeHTML(r.song_title)}</h3>
+   <p>Artis: ${escapeHTML(r.artist_name||"-")}<br>
+   Status: ${statusLabels[r.status]||r.status}<br>
+   Platform: ${escapeHTML((r.platforms||[]).join(", "))}</p>
+   <div class="actions">
+    <button class="secondary" onclick="openFile('${encodeURIComponent(r.audio_path)}','release-audio')">Audio</button>
+    <button class="secondary" onclick="openFile('${encodeURIComponent(r.artwork_path)}','release-artwork')">Artwork</button>
+   </div>
+   <label>Catatan untuk artis</label>
+   <textarea id="note_${r.id}" placeholder="Catatan pemeriksaan...">${escapeHTML(r.admin_notes||"")}</textarea>
+   <label>Status pengajuan</label>
+   <select id="status_${r.id}">
+    ${Object.keys(statusLabels).map(s=>`<option value="${s}" ${r.status===s?"selected":""}>${statusLabels[s]}</option>`).join("")}
+   </select>
+   <button style="margin-top:12px" onclick="updateRelease('${r.id}')">SIMPAN PEMERIKSAAN</button>
+  </div>
+ `).join("");
+}
+
+function escapeHTML(value){
+ return String(value??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+async function openFile(encodedPath,bucket){
+ const path=decodeURIComponent(encodedPath);
+ const {data,error}=await db.storage.from(bucket).createSignedUrl(path,300);
+ if(error){alert("Tidak dapat membuka file: "+error.message);return}
+ window.open(data.signedUrl,"_blank");
+}
+
+async function updateRelease(id){
+ const status=$("status_"+id).value;
+ const admin_notes=$("note_"+id).value.trim();
+ const {error}=await db.from("releases")
+  .update({status,admin_notes,updated_at:new Date().toISOString()})
+  .eq("id",id);
+ if(error){alert("Gagal menyimpan: "+error.message);return}
+ alert("Pemeriksaan berhasil disimpan.");
+ await loadAdminReleases();
+}
+
 async function logout(){
  await db.auth.signOut();
- dashboard.classList.add("hidden");
- loginForm.classList.remove("hidden");
- msg("Anda telah keluar.");
+ currentUser=null;currentProfile=null;
+ $("appPanel").classList.add("hidden");
+ $("logoutBtn").classList.add("hidden");
+ $("authPanel").classList.remove("hidden");
+ showLogin();
 }
+
 db.auth.onAuthStateChange((event,session)=>{
- if(session){
-  checkUser();
+ if(session?.user){
+  setTimeout(()=>loadDashboard(session.user),0);
  }else{
-  dashboard.classList.add("hidden");
-  loginForm.classList.remove("hidden");
+  currentUser=null;currentProfile=null;
+  $("appPanel").classList.add("hidden");
+  $("logoutBtn").classList.add("hidden");
+  $("authPanel").classList.remove("hidden");
  }
 });
+
+(async()=>{
+ const {data}=await db.auth.getSession();
+ if(data.session?.user)await loadDashboard(data.session.user);
+})();
 </script>
 </body>
-  </html>
-  
+ </html>
